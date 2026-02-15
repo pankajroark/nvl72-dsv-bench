@@ -26,10 +26,9 @@ spec:
       chmod +x bootstrap.sh
       ./bootstrap.sh
 
-      git clone https://github.com/pankajroark/nvl72.git
-      cd nvl72
-      git switch pg/nvl72-gpt-oss
-      tar -xvf dataset/synthetic_8192_512_same_prompte.tar.gz
+      git clone https://github.com/pankajroark/nvl72-dsv-bench.git
+      cd nvl72-dsv-bench
+      tar -xvf synthetic_8192_512_same_prompt.tar.gz
 
       # sleep infinity
       trtllm-bench \
