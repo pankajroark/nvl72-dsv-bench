@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dsv-bench
+  namespace: default
+  labels:
+    app: dsv-bench
+spec:
+  containers:
+  - name: dsv-bench
+    image: baseten/trtllm-1.3.0rc3:arm-release_bolt_632c039ae_overlay2512
+    imagePullPolicy: IfNotPresent
+    command:
+    - /bin/bash
+    - -c
+    - |
+      # Configure DNS first
+      apt update && apt install -y vim git git-lfs curl
+      echo "nameserver 1.1.1.1" > /etc/resolv.conf
+      echo "nameserver 1.0.0.1" >> /etc/resolv.conf
+      echo "search baseten.svc.cluster.local svc.cluster.local cluster.local" >> /etc/resolv.conf
+      echo "options ndots:2 edns0" >> /etc/resolv.conf
+
+      git clone "https://github.com/$REPO_FOR_DOTFILES" /root/dotfiles
+      cd /root/dotfiles
+      chmod +x bootstrap.sh
+      ./bootstrap.sh
+
+      git clone https://github.com/pankajroark/nvl72.git
+      cd nvl72
+      git switch pg/nvl72-gpt-oss
+      tar -xvf dataset/synthetic_8192_512_same_prompte.tar.gz
+
+      # sleep infinity
+      trtllm-bench \
+        --model nvidia/DeepSeek-R1-NVFP4 \
+        throughput \
+        --tp 4 \
+        --ep 2 \
+        --extra_llm_api_options extra_llm_api_options_single_node_agg.yaml \
+        --backend pytorch \
+        --dataset synthetic_8192_512_same_prompt.txt \
+        --warmup 1 \
+        --eos_id -1
+
+      sleep infinity
+    env:
+    - name: REPO_FOR_DOTFILES
+      value: pankajroark/generaldotfiles.git
+    resources:
+      limits:
+        memory: 384Gi
+        nvidia.com/gpu: 4
+      requests:
+        cpu: "16"
+        memory: 128Gi
+        nvidia.com/gpu: 4
+
+    # securityContext:
+    #   capabilities:
+    #     add:
+    #     - IPC_LOCK
+    #     - SYS_ADMIN
+    #   privileged: true
+    volumeMounts:
+    - mountPath: /workspace
+      name: shared-storage
+    - mountPath: /root/.cache/huggingface
+      name: huggingface-cache
+    - mountPath: /node-storage
+      name: node-storage
+    - mountPath: /dev/shm
+      name: shm
+  nodeSelector:
+    kubernetes.io/hostname: rke-gb200-df35bdd3-dilyl
+  restartPolicy: Always
+  tolerations:
+  - effect: NoSchedule
+    key: nvidia.com/gpu
+    operator: Exists
+  volumes:
+  - name: shared-storage
+    hostPath:
+      path: /mnt/nvme/cluster-model-performance/pankaj
+      type: DirectoryOrCreate
+  - name: huggingface-cache
+    hostPath:
+      path: /mnt/nvme/cluster-model-performance/huggingface
+      type: DirectoryOrCreate
+  - name: node-storage
+    hostPath:
+      path: /mnt/nvme/model-performance/pankaj
+      type: DirectoryOrCreate
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: 8Gi
