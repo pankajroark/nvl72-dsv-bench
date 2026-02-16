@@ -16,21 +16,12 @@ spec:
     - |
       # Configure DNS first
       apt update && apt install -y vim git git-lfs curl
-      echo "nameserver 1.1.1.1" > /etc/resolv.conf
-      echo "nameserver 1.0.0.1" >> /etc/resolv.conf
-      echo "search baseten.svc.cluster.local svc.cluster.local cluster.local" >> /etc/resolv.conf
-      echo "options ndots:2 edns0" >> /etc/resolv.conf
 
-      git clone "https://github.com/$REPO_FOR_DOTFILES" /root/dotfiles
-      cd /root/dotfiles
-      chmod +x bootstrap.sh
-      ./bootstrap.sh
-
+      cd /root
       git clone https://github.com/pankajroark/nvl72-dsv-bench.git
       cd nvl72-dsv-bench
       tar -xvf synthetic_8192_512_same_prompt.tar.gz
 
-      # sleep infinity
       trtllm-bench \
         --model nvidia/DeepSeek-R1-NVFP4 \
         throughput \
@@ -44,8 +35,6 @@ spec:
 
       sleep infinity
     env:
-    - name: REPO_FOR_DOTFILES
-      value: pankajroark/generaldotfiles.git
     resources:
       limits:
         memory: 384Gi
@@ -55,19 +44,9 @@ spec:
         memory: 128Gi
         nvidia.com/gpu: 4
 
-    # securityContext:
-    #   capabilities:
-    #     add:
-    #     - IPC_LOCK
-    #     - SYS_ADMIN
-    #   privileged: true
     volumeMounts:
-    - mountPath: /workspace
-      name: shared-storage
     - mountPath: /root/.cache/huggingface
       name: huggingface-cache
-    - mountPath: /node-storage
-      name: node-storage
     - mountPath: /dev/shm
       name: shm
   nodeSelector:
@@ -78,17 +57,9 @@ spec:
     key: nvidia.com/gpu
     operator: Exists
   volumes:
-  - name: shared-storage
-    hostPath:
-      path: /mnt/nvme/cluster-model-performance/pankaj
-      type: DirectoryOrCreate
   - name: huggingface-cache
     hostPath:
-      path: /mnt/nvme/cluster-model-performance/huggingface
-      type: DirectoryOrCreate
-  - name: node-storage
-    hostPath:
-      path: /mnt/nvme/model-performance/pankaj
+      path: /scratch/cluster-model-performance/huggingface
       type: DirectoryOrCreate
   - name: shm
     emptyDir:
