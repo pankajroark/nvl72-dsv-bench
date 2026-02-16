@@ -50,6 +50,8 @@ spec:
     - mountPath: /dev/shm
       name: shm
   restartPolicy: Always
+  nodeSelector:
+    kubernetes.io/hostname: p02-r02-cp07
   tolerations:
   - effect: NoSchedule
     key: nvidia.com/gpu
