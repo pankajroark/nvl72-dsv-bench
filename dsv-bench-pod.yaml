@@ -49,8 +49,6 @@ spec:
       name: huggingface-cache
     - mountPath: /dev/shm
       name: shm
-  nodeSelector:
-    kubernetes.io/hostname: rke-gb200-df35bdd3-dilyl
   restartPolicy: Always
   tolerations:
   - effect: NoSchedule
