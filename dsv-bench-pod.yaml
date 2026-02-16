@@ -15,9 +15,6 @@ spec:
     - -c
     - |
       sleep infinity
-      # Configure DNS first
-      echo "nameserver 1.1.1.1" > /etc/resolv.conf
-      echo "nameserver 1.0.0.1" >> /etc/resolv.conf
       apt update && apt install -y vim git git-lfs curl
 
       cd /root
